@@ -2,31 +2,27 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// +build !amd64 appengine gccgo
-
 package salsa
-
-const rounds = 20
 
 // core applies the Salsa20 core function to 16-byte input in, 32-byte key k,
 // and 16-byte constant c, and puts the result into 64-byte array out.
-func core(out *[64]byte, in *[16]byte, k *[32]byte, c *[16]byte) {
-	j0 := uint32(c[0]) | uint32(c[1])<<8 | uint32(c[2])<<16 | uint32(c[3])<<24
-	j1 := uint32(k[0]) | uint32(k[1])<<8 | uint32(k[2])<<16 | uint32(k[3])<<24
-	j2 := uint32(k[4]) | uint32(k[5])<<8 | uint32(k[6])<<16 | uint32(k[7])<<24
-	j3 := uint32(k[8]) | uint32(k[9])<<8 | uint32(k[10])<<16 | uint32(k[11])<<24
-	j4 := uint32(k[12]) | uint32(k[13])<<8 | uint32(k[14])<<16 | uint32(k[15])<<24
-	j5 := uint32(c[4]) | uint32(c[5])<<8 | uint32(c[6])<<16 | uint32(c[7])<<24
+func core(out *[64]byte, in *[16]byte, key *[32]byte, constants *[16]byte, rounds int) {
+	j0 := uint32(constants[0]) | uint32(constants[1])<<8 | uint32(constants[2])<<16 | uint32(constants[3])<<24
+	j1 := uint32(key[0]) | uint32(key[1])<<8 | uint32(key[2])<<16 | uint32(key[3])<<24
+	j2 := uint32(key[4]) | uint32(key[5])<<8 | uint32(key[6])<<16 | uint32(key[7])<<24
+	j3 := uint32(key[8]) | uint32(key[9])<<8 | uint32(key[10])<<16 | uint32(key[11])<<24
+	j4 := uint32(key[12]) | uint32(key[13])<<8 | uint32(key[14])<<16 | uint32(key[15])<<24
+	j5 := uint32(constants[4]) | uint32(constants[5])<<8 | uint32(constants[6])<<16 | uint32(constants[7])<<24
 	j6 := uint32(in[0]) | uint32(in[1])<<8 | uint32(in[2])<<16 | uint32(in[3])<<24
 	j7 := uint32(in[4]) | uint32(in[5])<<8 | uint32(in[6])<<16 | uint32(in[7])<<24
 	j8 := uint32(in[8]) | uint32(in[9])<<8 | uint32(in[10])<<16 | uint32(in[11])<<24
 	j9 := uint32(in[12]) | uint32(in[13])<<8 | uint32(in[14])<<16 | uint32(in[15])<<24
-	j10 := uint32(c[8]) | uint32(c[9])<<8 | uint32(c[10])<<16 | uint32(c[11])<<24
-	j11 := uint32(k[16]) | uint32(k[17])<<8 | uint32(k[18])<<16 | uint32(k[19])<<24
-	j12 := uint32(k[20]) | uint32(k[21])<<8 | uint32(k[22])<<16 | uint32(k[23])<<24
-	j13 := uint32(k[24]) | uint32(k[25])<<8 | uint32(k[26])<<16 | uint32(k[27])<<24
-	j14 := uint32(k[28]) | uint32(k[29])<<8 | uint32(k[30])<<16 | uint32(k[31])<<24
-	j15 := uint32(c[12]) | uint32(c[13])<<8 | uint32(c[14])<<16 | uint32(c[15])<<24
+	j10 := uint32(constants[8]) | uint32(constants[9])<<8 | uint32(constants[10])<<16 | uint32(constants[11])<<24
+	j11 := uint32(key[16]) | uint32(key[17])<<8 | uint32(key[18])<<16 | uint32(key[19])<<24
+	j12 := uint32(key[20]) | uint32(key[21])<<8 | uint32(key[22])<<16 | uint32(key[23])<<24
+	j13 := uint32(key[24]) | uint32(key[25])<<8 | uint32(key[26])<<16 | uint32(key[27])<<24
+	j14 := uint32(key[28]) | uint32(key[29])<<8 | uint32(key[30])<<16 | uint32(key[31])<<24
+	j15 := uint32(constants[12]) | uint32(constants[13])<<8 | uint32(constants[14])<<16 | uint32(constants[15])<<24
 
 	x0, x1, x2, x3, x4, x5, x6, x7, x8 := j0, j1, j2, j3, j4, j5, j6, j7, j8
 	x9, x10, x11, x12, x13, x14, x15 := j9, j10, j11, j12, j13, j14, j15
@@ -205,13 +201,13 @@ func core(out *[64]byte, in *[16]byte, k *[32]byte, c *[16]byte) {
 // XORKeyStream crypts bytes from in to out using the given key and counters.
 // In and out may be the same slice but otherwise should not overlap. Counter
 // contains the raw salsa20 counter bytes (both nonce and block counter).
-func XORKeyStream(out, in []byte, counter *[16]byte, key *[32]byte) {
+func XORKeyStream(out, in []byte, counter *[16]byte, key *[32]byte, sigma *[16]byte, rounds int) {
 	var block [64]byte
 	var counterCopy [16]byte
 	copy(counterCopy[:], counter[:])
 
 	for len(in) >= 64 {
-		core(&block, &counterCopy, key, &Sigma)
+		core(&block, &counterCopy, key, sigma, rounds)
 		for i, x := range block {
 			out[i] = in[i] ^ x
 		}
@@ -226,7 +222,7 @@ func XORKeyStream(out, in []byte, counter *[16]byte, key *[32]byte) {
 	}
 
 	if len(in) > 0 {
-		core(&block, &counterCopy, key, &Sigma)
+		core(&block, &counterCopy, key, sigma, rounds)
 		for i, v := range in {
 			out[i] = v ^ block[i]
 		}

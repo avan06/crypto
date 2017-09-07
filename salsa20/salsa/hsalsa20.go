@@ -3,33 +3,34 @@
 // license that can be found in the LICENSE file.
 
 // Package salsa provides low-level access to functions in the Salsa family.
-package salsa // import "golang.org/x/crypto/salsa20/salsa"
+package salsa // import_ "golang.org/x/crypto/salsa20/salsa"
 
 // Sigma is the Salsa20 constant for 256-bit keys.
-var Sigma = [16]byte{'e', 'x', 'p', 'a', 'n', 'd', ' ', '3', '2', '-', 'b', 'y', 't', 'e', ' ', 'k'}
+var Sigma32 = [16]byte{'e', 'x', 'p', 'a', 'n', 'd', ' ', '3', '2', '-', 'b', 'y', 't', 'e', ' ', 'k'}
+var Sigma16 = [16]byte{'e', 'x', 'p', 'a', 'n', 'd', ' ', '1', '6', '-', 'b', 'y', 't', 'e', ' ', 'k'}
 
 // HSalsa20 applies the HSalsa20 core function to a 16-byte input in, 32-byte
 // key k, and 16-byte constant c, and puts the result into the 32-byte array
 // out.
-func HSalsa20(out *[32]byte, in *[16]byte, k *[32]byte, c *[16]byte) {
-	x0 := uint32(c[0]) | uint32(c[1])<<8 | uint32(c[2])<<16 | uint32(c[3])<<24
-	x1 := uint32(k[0]) | uint32(k[1])<<8 | uint32(k[2])<<16 | uint32(k[3])<<24
-	x2 := uint32(k[4]) | uint32(k[5])<<8 | uint32(k[6])<<16 | uint32(k[7])<<24
-	x3 := uint32(k[8]) | uint32(k[9])<<8 | uint32(k[10])<<16 | uint32(k[11])<<24
-	x4 := uint32(k[12]) | uint32(k[13])<<8 | uint32(k[14])<<16 | uint32(k[15])<<24
-	x5 := uint32(c[4]) | uint32(c[5])<<8 | uint32(c[6])<<16 | uint32(c[7])<<24
+func HSalsa20(out *[32]byte, in *[16]byte, key *[32]byte, constants *[16]byte, rounds int) {
+	x0 := uint32(constants[0]) | uint32(constants[1])<<8 | uint32(constants[2])<<16 | uint32(constants[3])<<24
+	x1 := uint32(key[0]) | uint32(key[1])<<8 | uint32(key[2])<<16 | uint32(key[3])<<24
+	x2 := uint32(key[4]) | uint32(key[5])<<8 | uint32(key[6])<<16 | uint32(key[7])<<24
+	x3 := uint32(key[8]) | uint32(key[9])<<8 | uint32(key[10])<<16 | uint32(key[11])<<24
+	x4 := uint32(key[12]) | uint32(key[13])<<8 | uint32(key[14])<<16 | uint32(key[15])<<24
+	x5 := uint32(constants[4]) | uint32(constants[5])<<8 | uint32(constants[6])<<16 | uint32(constants[7])<<24
 	x6 := uint32(in[0]) | uint32(in[1])<<8 | uint32(in[2])<<16 | uint32(in[3])<<24
 	x7 := uint32(in[4]) | uint32(in[5])<<8 | uint32(in[6])<<16 | uint32(in[7])<<24
 	x8 := uint32(in[8]) | uint32(in[9])<<8 | uint32(in[10])<<16 | uint32(in[11])<<24
 	x9 := uint32(in[12]) | uint32(in[13])<<8 | uint32(in[14])<<16 | uint32(in[15])<<24
-	x10 := uint32(c[8]) | uint32(c[9])<<8 | uint32(c[10])<<16 | uint32(c[11])<<24
-	x11 := uint32(k[16]) | uint32(k[17])<<8 | uint32(k[18])<<16 | uint32(k[19])<<24
-	x12 := uint32(k[20]) | uint32(k[21])<<8 | uint32(k[22])<<16 | uint32(k[23])<<24
-	x13 := uint32(k[24]) | uint32(k[25])<<8 | uint32(k[26])<<16 | uint32(k[27])<<24
-	x14 := uint32(k[28]) | uint32(k[29])<<8 | uint32(k[30])<<16 | uint32(k[31])<<24
-	x15 := uint32(c[12]) | uint32(c[13])<<8 | uint32(c[14])<<16 | uint32(c[15])<<24
+	x10 := uint32(constants[8]) | uint32(constants[9])<<8 | uint32(constants[10])<<16 | uint32(constants[11])<<24
+	x11 := uint32(key[16]) | uint32(key[17])<<8 | uint32(key[18])<<16 | uint32(key[19])<<24
+	x12 := uint32(key[20]) | uint32(key[21])<<8 | uint32(key[22])<<16 | uint32(key[23])<<24
+	x13 := uint32(key[24]) | uint32(key[25])<<8 | uint32(key[26])<<16 | uint32(key[27])<<24
+	x14 := uint32(key[28]) | uint32(key[29])<<8 | uint32(key[30])<<16 | uint32(key[31])<<24
+	x15 := uint32(constants[12]) | uint32(constants[13])<<8 | uint32(constants[14])<<16 | uint32(constants[15])<<24
 
-	for i := 0; i < 20; i += 2 {
+	for i := 0; i < rounds; i += 2 {
 		u := x0 + x12
 		x4 ^= u<<7 | u>>(32-7)
 		u = x4 + x0
